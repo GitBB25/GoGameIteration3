@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: pl.pwr.gogame.model.GameEngineTest
+-------------------------------------------------------------------------------
+Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.180 s -- in pl.pwr.gogame.model.GameEngineTest
