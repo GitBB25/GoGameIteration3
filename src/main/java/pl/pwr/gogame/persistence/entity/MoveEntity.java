@@ -2,6 +2,7 @@ package pl.pwr.gogame.persistence.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,7 +28,9 @@ public class MoveEntity {
     @Enumerated(EnumType.STRING)
     private StoneColor playerColor;
 
+    @Column(name = "move_col")
     private int col;
+    @Column(name = "move_row")
     private int row;
 
     @Enumerated(EnumType.STRING)
@@ -57,5 +60,15 @@ public class MoveEntity {
         this.game = game;
     };
 
+
+     public int getCol() {
+        return this.col;
+    };
+    public int getRow() {
+       return this.row;
+    };
+     public StoneColor getPlayerColor() {
+        return this.playerColor;
+    };
 
 }

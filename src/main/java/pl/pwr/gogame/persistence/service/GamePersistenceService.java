@@ -1,3 +1,5 @@
+package pl.pwr.gogame.persistence.service;
+
 
 
 // w entity znajduje się deklaracja tabel do których będą
@@ -8,14 +10,23 @@ import pl.pwr.gogame.persistence.repository.MoveRepository;
 
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import pl.pwr.gogame.model.GameEngine;
+import pl.pwr.gogame.model.GamePlayer;
 import pl.pwr.gogame.model.Move;
 import pl.pwr.gogame.persistence.entity.GameEntity;
 import pl.pwr.gogame.persistence.entity.MoveEntity;
 import pl.pwr.gogame.persistence.entity.MoveType;
 import pl.pwr.gogame.persistence.repository.GameRepository;
 
+@Service
+
 public class GamePersistenceService {
+
+     @Autowired
+    private GameReplayService replayService;
 
     private final GameRepository gameRepository;
     private final MoveRepository moveRepository;
@@ -28,8 +39,11 @@ public class GamePersistenceService {
     public GameEntity startGame(GameEngine engine) {
         GameEntity game = new GameEntity();
         game.setBoardSize(engine.getBoard().getSize());
-        game.setBlackPlayer(engine.get);
-        game.setBlackPlayer(engine.get);
+        game.setBlackPlayerName(engine.getBlackPlayer().getName());
+        game.setBlackPlayerColor(engine.getBlackPlayer().getColor());
+
+        game.setWhitePlayerName(engine.getWhitePlayer().getName());
+        game.setWhitePlayerColor(engine.getWhitePlayer().getColor());
         game.setStartedAt(LocalDateTime.now());
         return gameRepository.save(game);
     }
@@ -51,6 +65,7 @@ public class GamePersistenceService {
         game.setFinishedAt(LocalDateTime.now());
         gameRepository.save(game);
 
+        replayService.replayGame(game.getId());
     }
     
 

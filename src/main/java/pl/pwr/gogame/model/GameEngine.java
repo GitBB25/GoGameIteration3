@@ -310,6 +310,10 @@ public class GameEngine {
 
     public GamePlayer getCurrentPlayer() { return currentPlayer; }
 
+    public GamePlayer getWhitePlayer() { return blackPlayer; }
+    
+    public GamePlayer getBlackPlayer() { return whitePlayer; }
+
     public void setCurrentPlayer(GamePlayer player) { this.currentPlayer = player; }
 
     public boolean getLastMoveWasPass() { return lastMoveWasPass; }

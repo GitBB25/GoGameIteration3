@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import pl.pwr.gogame.persistence.entity.GameEntity;
 import pl.pwr.gogame.persistence.entity.MoveEntity;
 
-public interface MoveRepository extends JpaRepository<GameEntity, Long> {
+public interface MoveRepository extends JpaRepository<MoveEntity, Long> {
     
-      List<MoveEntity> findByGameIdOrderByMoveNumber(Long gameId);
+      List<MoveEntity> findByGameOrderByMoveNumber(GameEntity game);
 }
