@@ -1,4 +1,4 @@
-# PROEJEKT GO 2.0
+# PROEJEKT GO 3.0
 
 Uruchamianie aplikacji
 
@@ -6,7 +6,7 @@ Do uruchomienia gry wymagane są trzy osobne terminale.
 
 Uruchomienie serwera
 
-mvn exec:java
+mvn spring-boot:run
 
 Uruchomienie klientów (dla każdego gracza osobno)
 
