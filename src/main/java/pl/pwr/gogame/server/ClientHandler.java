@@ -39,12 +39,12 @@ public class ClientHandler implements Runnable {
     /**
      * Silnik gry zarządzający logiką rozgrywki.
      */
-    private final GameEngine engine;
+    protected final GameEngine engine;
 
     /**
      * Gracz obsługiwany przez ten handler.
      */
-    private final GamePlayer player;
+    protected final GamePlayer player;
 
     /**
      * Plansza gry.
@@ -54,7 +54,7 @@ public class ClientHandler implements Runnable {
     /**
      * Handler przeciwnika.
      */
-    private ClientHandler opponent;
+    protected ClientHandler opponent;
 
     /**
      * Strumień wyjściowy do wysyłania danych do klienta.
@@ -284,9 +284,13 @@ public class ClientHandler implements Runnable {
     //W NetworkClient zczytujemy pierwszy wyraz z funkcji send,
     //co umożliwi poprawną aktualizację na planszy w GUI
     //w zależności od typu zdarzenia
-    private void sendMove(Move move, MoveResult result) {
+    protected  void sendMove(Move move, MoveResult result) {
         //jak nie było stawiania kamienia, np. pas lub resign, kończymy funkcję
         if (result == null) return;
+
+        System.out.println("WYSYŁANIE RUCHU DO KLIENTA: " + move.getPosition().col() + " " +
+                           move.getPosition().row() + " " +
+                           move.getPlayer().getColor());
 
         send("MOVE " + move.getPosition().col() + " " +
                      move.getPosition().row() + " " +
@@ -300,7 +304,7 @@ public class ClientHandler implements Runnable {
     }
 
     //wysyłanie PASS do GUI lub terminala
-    private void sendPass(GamePlayer player) {
+    protected  void sendPass(GamePlayer player) {
         send("PASS " + player.getColor());
     }
 
@@ -340,27 +344,33 @@ public class ClientHandler implements Runnable {
      *
      * @param opponent handler przeciwnika
      */
-    public void setOpponent(ClientHandler opponent) {
-        this.opponent = opponent;
-        this.gameStarted = true;
-        if (opponent != null) {
-            opponent.opponent = this;
-            opponent.gameStarted = true;
+    public void setOpponent(Object opponent) {
+        if (opponent instanceof ClientHandler) {
+            this.opponent = (ClientHandler) opponent;
+            this.gameStarted = true;
+            if (this.opponent != null) {
+                this.opponent.opponent = this;
+                this.opponent.gameStarted = true;
 
-            waitForOut();
-            opponent.waitForOut();
+                waitForOut();
+                this.opponent.waitForOut();
 
+                send("GAME_START");
+                this.opponent.send("GAME_START");
+                send("YOUR_TURN");
+                this.opponent.send("OPPONENT_TURN");
+            }
+        } else if (opponent instanceof BotHandler) {
+            this.gameStarted = true;
             send("GAME_START");
-            opponent.send("GAME_START");
-            send("YOUR_TURN");
-            opponent.send("OPPONENT_TURN");
+            send("YOUR_TURN"); // The player always starts first when playing against a bot
         }
     }
 
     /**
      * Oczekuje na inicjalizację strumienia wyjściowego {@link #out}.
      */
-    private void waitForOut() {
+    protected void waitForOut() {
         int waited = 0;
         while (this.out == null && waited < 5000) {
             try {
@@ -380,4 +390,4 @@ public class ClientHandler implements Runnable {
             out.println(message);
         }
     }
-} 
+}

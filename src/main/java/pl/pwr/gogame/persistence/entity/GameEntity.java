@@ -60,6 +60,15 @@ public class GameEntity {
     @OrderBy("moveNumber ASC")
     private List<MoveEntity> moves = new ArrayList<>();
 
+    public GameEntity(int boardSize, String blackPlayerName, StoneColor blackPlayerColor, String whitePlayerName, StoneColor whitePlayerColor, LocalDateTime startedAt) {
+        this.boardSize = boardSize;
+        this.blackPlayerName = blackPlayerName;
+        this.blackPlayerColor = blackPlayerColor;
+        this.whitePlayerName = whitePlayerName;
+        this.whitePlayerColor = whitePlayerColor;
+        this.startedAt = startedAt;
+    }
+
     public void setBoardSize(int boardSize) {
         this.boardSize = boardSize;
     };

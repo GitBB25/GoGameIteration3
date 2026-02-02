@@ -6,8 +6,6 @@ package pl.pwr.gogame.persistence.service;
 //zapisywane dane, a tutaj w service znajdują się metody
 //do zapisywania danych do tych tabel
 
-import pl.pwr.gogame.persistence.repository.MoveRepository;
-
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +18,7 @@ import pl.pwr.gogame.persistence.entity.GameEntity;
 import pl.pwr.gogame.persistence.entity.MoveEntity;
 import pl.pwr.gogame.persistence.entity.MoveType;
 import pl.pwr.gogame.persistence.repository.GameRepository;
+import pl.pwr.gogame.persistence.repository.MoveRepository;
 
 @Service
 
@@ -37,14 +36,14 @@ public class GamePersistenceService {
     }
 
     public GameEntity startGame(GameEngine engine) {
-        GameEntity game = new GameEntity();
-        game.setBoardSize(engine.getBoard().getSize());
-        game.setBlackPlayerName(engine.getBlackPlayer().getName());
-        game.setBlackPlayerColor(engine.getBlackPlayer().getColor());
-
-        game.setWhitePlayerName(engine.getWhitePlayer().getName());
-        game.setWhitePlayerColor(engine.getWhitePlayer().getColor());
-        game.setStartedAt(LocalDateTime.now());
+        GameEntity game = new GameEntity(
+            engine.getBoard().getSize(),
+            engine.getBlackPlayer().getName(),
+            engine.getBlackPlayer().getColor(),
+            engine.getWhitePlayer().getName(),
+            engine.getWhitePlayer().getColor(),
+            LocalDateTime.now()
+        );
         return gameRepository.save(game);
     }
 
