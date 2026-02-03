@@ -21,6 +21,7 @@ public class MoveEntity {
     @GeneratedValue
     private Long id;
 
+    @Column(nullable = false)
     private int moveNumber;
 
     @Enumerated(EnumType.STRING)
@@ -39,6 +40,9 @@ public class MoveEntity {
     private GameEntity game;
 
     
+    public MoveEntity() {
+    }
+
     public void setMoveNumber(int moveNumber) {
         this.moveNumber = moveNumber;
     };
@@ -58,7 +62,6 @@ public class MoveEntity {
         this.game = game;
     };
 
-
      public int getCol() {
         return this.col;
     };
@@ -68,5 +71,9 @@ public class MoveEntity {
      public StoneColor getPlayerColor() {
         return this.playerColor;
     };
+
+    public MoveType getType() {
+        return this.type;
+    }
 
 }

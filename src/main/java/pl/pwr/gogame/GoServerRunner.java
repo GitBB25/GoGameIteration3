@@ -14,11 +14,21 @@ import pl.pwr.gogame.model.BoardFactory;
 import pl.pwr.gogame.model.GameEngine;
 import pl.pwr.gogame.model.GamePlayer;
 import pl.pwr.gogame.model.StoneColor;
+import pl.pwr.gogame.persistence.entity.GameEntity;
 import pl.pwr.gogame.server.BotHandler;
 import pl.pwr.gogame.server.ClientHandler;
 
+import pl.pwr.gogame.persistence.service.GamePersistenceService;
+
 @Component
 public class GoServerRunner {
+
+    private final GamePersistenceService persistenceService;
+
+    public GoServerRunner(GamePersistenceService persistenceService) {
+        this.persistenceService = persistenceService;
+    }
+
 
     @PostConstruct
     public void startServer() {
@@ -33,6 +43,8 @@ public class GoServerRunner {
 
     private void runServer() throws IOException {
          try (ServerSocket serverSocket = new ServerSocket(58901)) {
+
+
             System.out.println("Serwer Go działa...");
             System.out.println("Witaj w Go! (serwer będzie oczekiwał na wybór rozmiaru od pierwszego klienta)");
 
@@ -109,12 +121,15 @@ public class GoServerRunner {
                     GamePlayer botPlayer = new GamePlayer("WhitePlayer", StoneColor.WHITE);
                     gameEngine.setPlayers(blackPlayer, botPlayer);
 
+                    // Obsługa bazy danych
+                    GameEntity gameEntity = persistenceService.startGame(gameEngine);
+
                     // Utworzenie handlera klienta i bota
-                    ClientHandler black = new ClientHandler(socket1, gameEngine, blackPlayer, board);
+                    ClientHandler black = new ClientHandler(socket1, gameEngine, blackPlayer, board, persistenceService, gameEntity);
 
                     // Tworzenie drugiego socketu dla bota
                     Socket botSocket = new Socket("localhost", socket1.getLocalPort());
-                    BotHandler bot = new BotHandler(botSocket, gameEngine, botPlayer, board);
+                    BotHandler bot = new BotHandler(botSocket, gameEngine, botPlayer, board, persistenceService, gameEntity);
 
                     // Uruchomienie wątków obsługi klienta i bota
                     new Thread(black).start();
@@ -134,12 +149,15 @@ public class GoServerRunner {
                 GamePlayer blackPlayer = new GamePlayer("BlackPlayer", StoneColor.BLACK);
                 GamePlayer whitePlayer = new GamePlayer("WhitePlayer", StoneColor.WHITE);
                 gameEngine.setPlayers(blackPlayer, whitePlayer);
+                
+                // Obsługa bazy danych
+                GameEntity gameEntity = persistenceService.startGame(gameEngine);
 
                 System.out.println("OCZEKIWANIE: Oczekiwanie na drugiego klienta... (oczekuję na 1 połączenie)");
 
                 // Utworzenie handlerów klientów
-                ClientHandler black = new ClientHandler(socket1, gameEngine, blackPlayer, board);
-                ClientHandler white = new ClientHandler(socket2, gameEngine, whitePlayer, board);
+                ClientHandler black = new ClientHandler(socket1, gameEngine, blackPlayer, board, persistenceService, gameEntity);
+                ClientHandler white = new ClientHandler(socket2, gameEngine, whitePlayer, board, persistenceService, gameEntity);
 
                 // Uruchomienie wątków obsługi klientów
                 new Thread(black).start();

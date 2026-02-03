@@ -11,9 +11,11 @@ import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import pl.pwr.gogame.model.GameEngine;
 import pl.pwr.gogame.model.GamePlayer;
 import pl.pwr.gogame.model.Move;
+import pl.pwr.gogame.model.StoneColor;
 import pl.pwr.gogame.persistence.entity.GameEntity;
 import pl.pwr.gogame.persistence.entity.MoveEntity;
 import pl.pwr.gogame.persistence.entity.MoveType;
@@ -29,7 +31,7 @@ public class GamePersistenceService {
 
     private final GameRepository gameRepository;
     private final MoveRepository moveRepository;
-
+    
     public GamePersistenceService(GameRepository gameRepository, MoveRepository moveRepository) {
         this.gameRepository = gameRepository;
         this.moveRepository = moveRepository;
@@ -46,25 +48,50 @@ public class GamePersistenceService {
         );
         return gameRepository.save(game);
     }
-
+    
+    @Transactional
     public void saveMove(GameEntity game, Move move, int moveNumber) {
         MoveEntity entity = new MoveEntity();
+        
         entity.setGame(game);
-        entity.setMoveNumber(moveNumber);
+        entity.setMoveNumber(game.getMoves().size() + 1);
         entity.setPlayerColor(move.getPlayer().getColor());
         entity.setCol(move.getPosition().col());
         entity.setRow(move.getPosition().row());
         entity.setType(MoveType.MOVE);
+        
+        game.getMoves().add(entity);
+
         moveRepository.save(entity);
+        moveRepository.flush();
     }
 
+    public void saveMovePassBot(GameEntity game, Move move, int moveNumber) {
+        MoveEntity entity = new MoveEntity();
+        
+        entity.setGame(game);
+        entity.setMoveNumber(game.getMoves().size() + 1);
+        entity.setPlayerColor(StoneColor.WHITE);
+        entity.setCol(-1);
+        entity.setRow(-1);
+        entity.setType(MoveType.PASS);
+        
+        game.getMoves().add(entity);
+
+        moveRepository.save(entity);
+        moveRepository.flush();
+    }
 
     public void finishGame(GameEntity game, GamePlayer winner) {
+         if (winner != null) {
         game.setWinner(winner.getName());
-        game.setFinishedAt(LocalDateTime.now());
-        gameRepository.save(game);
+        } else {
+        game.setWinner("DRAW");
+        }
+    game.setFinishedAt(LocalDateTime.now());
+    gameRepository.save(game);
 
-        replayService.replayGame(game.getId());
+    replayService.replayGame(game.getId());
     }
     
 

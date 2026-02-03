@@ -9,18 +9,30 @@ import pl.pwr.gogame.model.GamePlayer;
 import pl.pwr.gogame.model.Move;
 import pl.pwr.gogame.model.MoveResult;
 import pl.pwr.gogame.model.Position;
+import pl.pwr.gogame.persistence.entity.GameEntity;
+import pl.pwr.gogame.persistence.entity.MoveEntity;
+import pl.pwr.gogame.persistence.entity.MoveType;
+import pl.pwr.gogame.persistence.service.GamePersistenceService;
 
 public class BotHandler extends ClientHandler {
     private final Random random = new Random();
 
- public BotHandler(Socket socket,GameEngine engine, GamePlayer botPlayer, Board board) {
-    super(socket, engine, botPlayer, board); // Bot nie potrzebuje socketu, więc przekazujemy `null`
+    private volatile boolean running = true;
+
+    @Override
+    protected void shutdownHandler() {
+    running = false;
+    }
+
+ public BotHandler(Socket socket,GameEngine engine, GamePlayer botPlayer, Board board, GamePersistenceService persistenceService, GameEntity gameEntity) {
+    super(socket, engine, botPlayer, board, persistenceService, gameEntity); // Bot nie potrzebuje socketu, więc przekazujemy `null`
 }
     @Override
     public void run() {
         System.out.println("Bot dołączył do gry jako " + player.getName());
-        while (!engine.isEnd()) {
+        while (running && !engine.isEnd()) {
              //System.out.println("BOT: Aktualny gracz to: " + engine.getCurrentPlayer().getName());
+             if (engine.getCurrentPlayer() == null) break;
             if (engine.getCurrentPlayer().equals(player) ) {
                 makeMove();
             }
@@ -30,6 +42,8 @@ public class BotHandler extends ClientHandler {
                 Thread.currentThread().interrupt();
             }
         }
+
+          System.out.println("BOT THREAD FINISHED");
     }
     protected void handleDisconnect() {
         // Bot nie wymaga obsługi rozłączenia
@@ -97,6 +111,9 @@ private void makeMove() {
         MoveResult result = engine.applyMove(botMove);
         if (result.isOk()) {
             lastMove = move; // Zaktualizuj ostatnią pozycję
+
+            persistenceService.saveMove(gameEntity, botMove, size);
+            
             sendMove(botMove, result);
             if (opponent != null) {
                 opponent.sendMove(botMove, result);
@@ -109,9 +126,11 @@ private void makeMove() {
         }
     } else {
         MoveResult result = engine.pass(player);
+
         sendPass(player);
+
     }
-}
+    }
 @Override
 protected void waitForOut() {
     try {

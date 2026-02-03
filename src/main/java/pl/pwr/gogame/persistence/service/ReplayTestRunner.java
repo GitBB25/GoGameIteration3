@@ -17,12 +17,24 @@ public class ReplayTestRunner implements ApplicationListener<ApplicationReadyEve
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
-        replayService.findGameById(1L).ifPresentOrElse(
-            game -> {
-                GameEngine engine = replayService.replayGame(game.getId());
-                System.out.println("Replay finished for game " + game.getId());
-            },
-            () -> System.out.println("No game 1 found in DB, skipping replay.")
-        );
+
+        //Odpalamy replay w osobnym wątku by nie blokował wyświetlania logów z bieżącej gry
+        new Thread(() -> {
+            replayService.findLastGame().ifPresentOrElse(
+                game -> {
+                    System.out.println("\n=== ROZPOCZĘCIE POWTÓRKI DLA GRY " + game.getId() + " ===");
+
+                    GameEngine engine = replayService.replayGameWithLogging(game.getId());
+
+                    System.out.println("Zwycięzca: " +
+                        (engine.getWinner() != null
+                            ? engine.getWinner().getName()
+                            : "DRAW"));
+
+                    System.out.println("=== POWTÓRKA UKOŃCZONA ===\n");
+                },
+                () -> System.out.println("Brak gier w bazie, powtórka pominięta.")
+            );
+        }).start(); 
     }
 }

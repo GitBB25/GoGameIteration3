@@ -8,6 +8,9 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Scanner;
 
+import org.springframework.boot.SpringApplication;
+
+import pl.pwr.gogame.ApplicationContextProvider;
 import pl.pwr.gogame.model.Board;
 import pl.pwr.gogame.model.GameEngine;
 import pl.pwr.gogame.model.GamePlayer;
@@ -15,6 +18,8 @@ import pl.pwr.gogame.model.Move;
 import pl.pwr.gogame.model.MoveResult;
 import pl.pwr.gogame.model.Position;
 import pl.pwr.gogame.model.ScoreResult;
+import pl.pwr.gogame.persistence.entity.GameEntity;
+import pl.pwr.gogame.persistence.service.GamePersistenceService;
 
 /**
  * Klasa {@code ClientHandler} odpowiada za obsługę pojedynczego klienta
@@ -30,6 +35,12 @@ import pl.pwr.gogame.model.ScoreResult;
  * </ul>
  */
 public class ClientHandler implements Runnable {
+
+    private volatile boolean running = true;
+
+    public final GamePersistenceService persistenceService;
+    protected final GameEntity gameEntity;
+    private int moveNumber = 0;
 
     /**
      * Gniazdo sieciowe połączone z klientem.
@@ -75,11 +86,13 @@ public class ClientHandler implements Runnable {
      * @param player gracz
      * @param board plansza gry
      */
-    public ClientHandler(Socket socket, GameEngine engine, GamePlayer player, Board board) {
+    public ClientHandler(Socket socket, GameEngine engine, GamePlayer player, Board board, GamePersistenceService persistenceService, GameEntity gameEntity) {
         this.socket = socket;
         this.engine = engine;
         this.player = player;
         this.board = board;
+        this.persistenceService = persistenceService;
+        this.gameEntity = gameEntity;
     }
 
     /**
@@ -102,7 +115,7 @@ public class ClientHandler implements Runnable {
                 send("OCZEKIWANIE: Oczekiwanie na dołączenie przeciwnika...");
             }
 
-            while (in.hasNextLine()) {
+            while (running && in.hasNextLine()) {
                 String command = in.nextLine();
                 handleCommand(command);
             }
@@ -124,13 +137,29 @@ public class ClientHandler implements Runnable {
 
             // Jeśli silnik zgłasza koniec gry, blokujemy wszystkie dalsze komendy
             if (engine.isEnd()) {
+               
                 // Wyślij komunikat o zakończeniu gry tylko raz na klienta
                 if (!gameEndNotified) {
                     sendText("Gra zakończona.");
                     if (opponent != null) {
                         opponent.sendText("Gra zakończona.");
                     }
+
+                    engine.setEnd(true); 
+                    persistenceService.finishGame(gameEntity, engine.getWinner());
+
                     gameEndNotified = true;
+
+                    shutdownHandler();
+
+                    if (opponent != null) {
+                    opponent.shutdownHandler();
+                    }
+
+                    SpringApplication.exit(
+                        ApplicationContextProvider.getContext(),
+                        () -> 0
+                    );
                 }
                 return;
             }
@@ -248,6 +277,8 @@ public class ClientHandler implements Runnable {
                 if (opponent != null) {
                     opponent.sendMove(move, result);
                 }
+
+                persistenceService.saveMove(gameEntity, move, moveNumber++);
             }
 
             //Funkcją sendText wysyłamy ruch do terminala
@@ -335,6 +366,7 @@ public class ClientHandler implements Runnable {
 
         if (opponent != null) {
             opponent.send("Przeciwnik rozłączył się. Gra zakończona.");
+            opponent.shutdownHandler();
         }
     }
 
@@ -390,4 +422,12 @@ public class ClientHandler implements Runnable {
             out.println(message);
         }
     }
+
+    protected void shutdownHandler() {
+    running = false;
+    try {
+        socket.close();   // this will break Scanner.hasNextLine()
+    } catch (IOException ignored) {}
+    }
+
 }
