@@ -3,10 +3,8 @@ package pl.pwr.gogame.persistence.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
 import pl.pwr.gogame.model.GameEngine;
 
 @Component
@@ -26,7 +24,7 @@ public class ReplayTestRunner implements ApplicationListener<ApplicationReadyEve
 
                     GameEngine engine = replayService.replayGameWithLogging(game.getId());
 
-                    System.out.println("Zwycięzca: " +
+                    System.out.println(
                         (engine.getWinner() != null
                             ? engine.getWinner().getName()
                             : "DRAW"));
