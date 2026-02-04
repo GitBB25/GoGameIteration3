@@ -27,6 +27,7 @@
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/persistence/repository/MoveRepository.java
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/model/BoardFactory.java
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/server/BotHandler.java
+/home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/ApplicationContextProvider.java
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/service/GameEngineService.java
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/server/ClientHandler.java
 /home/adam/studia/techonologia/GoGameIteration3/src/main/java/pl/pwr/gogame/Main.java

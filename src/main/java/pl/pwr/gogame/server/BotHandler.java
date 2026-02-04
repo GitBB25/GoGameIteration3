@@ -3,15 +3,14 @@ package pl.pwr.gogame.server;
 import java.net.Socket;
 import java.util.Random;
 
-import pl.pwr.gogame.model.Board;
+import pl.pwr.gogame.model.Board; // Import the missing ScoreResult class
 import pl.pwr.gogame.model.GameEngine;
 import pl.pwr.gogame.model.GamePlayer;
 import pl.pwr.gogame.model.Move;
 import pl.pwr.gogame.model.MoveResult;
 import pl.pwr.gogame.model.Position;
+import pl.pwr.gogame.model.ScoreResult;
 import pl.pwr.gogame.persistence.entity.GameEntity;
-import pl.pwr.gogame.persistence.entity.MoveEntity;
-import pl.pwr.gogame.persistence.entity.MoveType;
 import pl.pwr.gogame.persistence.service.GamePersistenceService;
 
 public class BotHandler extends ClientHandler {
@@ -43,7 +42,13 @@ public class BotHandler extends ClientHandler {
             }
         }
 
-          System.out.println("BOT THREAD FINISHED");
+          ScoreResult scores = engine.calculateScores();
+                    String scoreMessage = ResponseFormatter.formatScores(scores);
+
+                    sendText(scoreMessage);
+                    if (opponent != null) {
+                        opponent.sendText(scoreMessage);
+                    }
     }
     protected void handleDisconnect() {
         // Bot nie wymaga obsługi rozłączenia
@@ -51,6 +56,7 @@ public class BotHandler extends ClientHandler {
     }
 
 private Position lastMove = null; // Przechowuje ostatnią pozycję bota
+int attempts = 0; // Licznik prób znalezienia poprawnego ruchu
 private void makeMove() {
     Board board = engine.getBoard();
     int size = board.getSize();
@@ -85,7 +91,10 @@ private void makeMove() {
             int newRow = lastMove.row() + dir[1];
             Position pos = new Position(newCol, newRow);
             if (newCol >= 0 && newCol < size && newRow >= 0 && newRow < size && board.isEmpty(pos)) {
+                if(pos != lastMove){
                 move = pos;
+                System.out.println("BOT: Szukam pola obok ostatniego ruchu: " + lastMove + ", znalazłem: " + move);
+                }
                 break;
             }
         }
@@ -93,15 +102,14 @@ private void makeMove() {
 
     // Jeśli nie znaleziono pola obok, szukaj pierwszego pustego pola na planszy
     if (move == null) {
-        for (int col = 0; col < size; col++) {
-            for (int row = 0; row < size; row++) {
-                Position pos = new Position(col, row);
-                if (board.isEmpty(pos)) {
-                    move = pos;
-                    break;
-                }
+        while (true) {
+            int col = random.nextInt(size);
+            int row = random.nextInt(size);
+            Position pos = new Position(col, row);
+            if (board.isEmpty(pos)) { // Sprawdź, czy ruch jest poprawny
+                move = pos;
+                break;
             }
-            if (move != null) break;
         }
     }
 
@@ -109,9 +117,9 @@ private void makeMove() {
     if (move != null) {
         Move botMove = new Move(move, player);
         MoveResult result = engine.applyMove(botMove);
+        lastMove = move; // Zaktualizuj ostatnią pozycję
         if (result.isOk()) {
-            lastMove = move; // Zaktualizuj ostatnią pozycję
-
+            attempts = 0; // Resetuj licznik prób po udanym ruchu
             persistenceService.saveMove(gameEntity, botMove, size);
             
             sendMove(botMove, result);
@@ -124,11 +132,22 @@ private void makeMove() {
             current.send("YOUR_TURN");
             waiting.send("OPPONENT_TURN");
         }
+        else if (attempts < 10) {
+            System.out.println("BOT: Ruch nie został zaakceptowany: " + result.getErrorMessage());
+            System.out.println(attempts);
+            attempts++;
+        }
+        else {
+            ClientHandler current = engine.getCurrentPlayer() == player ? this : opponent;
+            ClientHandler waiting = current == this ? opponent : this;
+            current.send("YOUR_TURN");
+            waiting.send("OPPONENT_TURN");
+            engine.setEnd(running);
+        }
     } else {
-        MoveResult result = engine.pass(player);
-
+        System.out.println("BOT: Spasowałem.");
+        engine.pass(player);
         sendPass(player);
-
     }
     }
 @Override

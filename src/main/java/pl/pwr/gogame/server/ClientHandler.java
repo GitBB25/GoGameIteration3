@@ -345,7 +345,7 @@ public class ClientHandler implements Runnable {
     }
 
     /** Wysyłanie tekstu do GUI lub terminala */
-    private void sendText(String message) {
+    protected void sendText(String message) {
         send("TEXT " + message);
     }
 

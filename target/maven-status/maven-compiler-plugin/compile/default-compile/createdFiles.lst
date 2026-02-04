@@ -13,6 +13,7 @@ pl/pwr/gogame/client/view/GameView.class
 pl/pwr/gogame/persistence/service/GamePersistenceService.class
 pl/pwr/gogame/persistence/repository/MoveRepository.class
 pl/pwr/gogame/model/Board.class
+pl/pwr/gogame/persistence/service/GameReplayService$1.class
 pl/pwr/gogame/server/ResponseFormatter.class
 pl/pwr/gogame/client/NetworkClient.class
 pl/pwr/gogame/client/GameController.class
