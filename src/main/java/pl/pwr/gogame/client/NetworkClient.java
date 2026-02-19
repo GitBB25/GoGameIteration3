@@ -141,6 +141,62 @@ public class NetworkClient {
     }
 
     /**
+     * Wyświetla okno dialogowe umożliwiające wybór
+     * trybu gry (gra z botem lub z graczem).
+     */
+    private void showGameModeDialog() {
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Wybierz tryb gry");
+
+        Label label = new Label("Wybierz tryb gry:");
+
+        Button botButton = new Button("Gra z botem");
+        Button playerButton = new Button("Gra z graczem");
+
+        botButton.setOnAction(e -> {
+            send("SET_GAME_MODE BOT");
+            botButton.setDisable(true);
+            playerButton.setDisable(true);
+            dialog.close();
+        });
+        playerButton.setOnAction(e -> {
+            send("SET_GAME_MODE PLAYER");
+            botButton.setDisable(true);
+            playerButton.setDisable(true);
+            dialog.close();
+        });
+
+        HBox buttons = new HBox(12);
+        buttons.setSpacing(12);
+        buttons.setStyle("-fx-alignment: center;");
+        buttons.getChildren().addAll(botButton, playerButton);
+
+        VBox root = new VBox(16, label, buttons);
+        root.setPadding(new javafx.geometry.Insets(14));
+        root.setStyle("-fx-alignment: center;");
+
+        Scene scene = new Scene(root, 400, 200);
+
+        botButton.setStyle("-fx-font-size: 18px;");
+        playerButton.setStyle("-fx-font-size: 18px;");
+
+        botButton.prefWidthProperty().bind(scene.widthProperty().multiply(0.4));
+        playerButton.prefWidthProperty().bind(scene.widthProperty().multiply(0.4));
+
+        botButton.prefHeightProperty().bind(scene.heightProperty().multiply(0.5));
+        playerButton.prefHeightProperty().bind(scene.heightProperty().multiply(0.5));
+
+        botButton.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        playerButton.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        dialog.setScene(scene);
+        dialog.setMinWidth(300);
+        dialog.setMinHeight(150);
+        dialog.showAndWait();
+    }
+
+    /**
      * Nasłuchuje wiadomości przychodzących z serwera
      * i reaguje na nie odpowiednimi akcjami w interfejsie użytkownika.
      *
@@ -168,7 +224,10 @@ public class NetworkClient {
                     Platform.runLater(() -> showBoardSizeDialog());
                     continue;
                 }
-
+                if (msg.equals("REQUEST_GAME_MODE")) {
+                    Platform.runLater(() -> showGameModeDialog());
+                    continue;
+                }
                 // W zależności od typu zdarzenia wywoływane są
                 // dane metody
                 // Np. dla MOVE dzielimy wiadomość np "1 2" na

@@ -3,19 +3,10 @@
 package pl.pwr.gogame;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.PrintWriter;
-import java.util.Scanner;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import pl.pwr.gogame.model.Board; 
-import pl.pwr.gogame.model.BoardFactory;
-import pl.pwr.gogame.model.GameEngine;
-import pl.pwr.gogame.model.GamePlayer;
-import pl.pwr.gogame.model.StoneColor;
 import pl.pwr.gogame.server.ClientHandler;
 
 /**
@@ -51,6 +42,7 @@ public class Main {
      */
     public static void main(String[] args) throws IOException {
         SpringApplication.run(Main.class, args);
+        
     }
 
 }

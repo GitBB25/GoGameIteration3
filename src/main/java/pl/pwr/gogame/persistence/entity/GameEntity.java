@@ -26,7 +26,7 @@ import jakarta.persistence.GeneratedValue;
 //To entity przechowuje dane o grze
 
 @Entity
-@Table(name = "moves")
+@Table(name = "games")
 public class GameEntity {
     
     @Id
@@ -59,6 +59,19 @@ public class GameEntity {
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
     @OrderBy("moveNumber ASC")
     private List<MoveEntity> moves = new ArrayList<>();
+
+    public GameEntity(int boardSize, String blackPlayerName, StoneColor blackPlayerColor, String whitePlayerName, StoneColor whitePlayerColor, LocalDateTime startedAt) {
+        this.boardSize = boardSize;
+        this.blackPlayerName = blackPlayerName;
+        this.blackPlayerColor = blackPlayerColor;
+        this.whitePlayerName = whitePlayerName;
+        this.whitePlayerColor = whitePlayerColor;
+        this.startedAt = startedAt;
+    }
+
+    protected GameEntity() {
+    }
+
 
     public void setBoardSize(int boardSize) {
         this.boardSize = boardSize;
@@ -101,7 +114,28 @@ public class GameEntity {
         return this.winner;
     };
 
+    public List<MoveEntity> getMoves() {
+        return this.moves;
+    }
     public Long getId() {
         return this.id;
     }
+
+    public String getWhitePlayerName() {
+        return this.whitePlayerName;
+    };
+
+    public String getBlackPlayerName() {
+        return this.blackPlayerName;
+    };
+
+
+    public StoneColor getBlackPlayerColor() {
+        return this.blackPlayerColor;
+    };
+
+    public StoneColor getWhitePlayerColor() {
+        return this.whitePlayerColor;
+    };
+
 }

@@ -8,6 +8,9 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Scanner;
 
+import org.springframework.boot.SpringApplication;
+
+import pl.pwr.gogame.ApplicationContextProvider;
 import pl.pwr.gogame.model.Board;
 import pl.pwr.gogame.model.GameEngine;
 import pl.pwr.gogame.model.GamePlayer;
@@ -15,6 +18,8 @@ import pl.pwr.gogame.model.Move;
 import pl.pwr.gogame.model.MoveResult;
 import pl.pwr.gogame.model.Position;
 import pl.pwr.gogame.model.ScoreResult;
+import pl.pwr.gogame.persistence.entity.GameEntity;
+import pl.pwr.gogame.persistence.service.GamePersistenceService;
 
 /**
  * Klasa {@code ClientHandler} odpowiada za obsługę pojedynczego klienta
@@ -31,6 +36,12 @@ import pl.pwr.gogame.model.ScoreResult;
  */
 public class ClientHandler implements Runnable {
 
+    private volatile boolean running = true;
+
+    public final GamePersistenceService persistenceService;
+    protected final GameEntity gameEntity;
+    private int moveNumber = 0;
+
     /**
      * Gniazdo sieciowe połączone z klientem.
      */
@@ -39,12 +50,12 @@ public class ClientHandler implements Runnable {
     /**
      * Silnik gry zarządzający logiką rozgrywki.
      */
-    private final GameEngine engine;
+    protected final GameEngine engine;
 
     /**
      * Gracz obsługiwany przez ten handler.
      */
-    private final GamePlayer player;
+    protected final GamePlayer player;
 
     /**
      * Plansza gry.
@@ -54,7 +65,7 @@ public class ClientHandler implements Runnable {
     /**
      * Handler przeciwnika.
      */
-    private ClientHandler opponent;
+    protected ClientHandler opponent;
 
     /**
      * Strumień wyjściowy do wysyłania danych do klienta.
@@ -75,11 +86,13 @@ public class ClientHandler implements Runnable {
      * @param player gracz
      * @param board plansza gry
      */
-    public ClientHandler(Socket socket, GameEngine engine, GamePlayer player, Board board) {
+    public ClientHandler(Socket socket, GameEngine engine, GamePlayer player, Board board, GamePersistenceService persistenceService, GameEntity gameEntity) {
         this.socket = socket;
         this.engine = engine;
         this.player = player;
         this.board = board;
+        this.persistenceService = persistenceService;
+        this.gameEntity = gameEntity;
     }
 
     /**
@@ -102,7 +115,7 @@ public class ClientHandler implements Runnable {
                 send("OCZEKIWANIE: Oczekiwanie na dołączenie przeciwnika...");
             }
 
-            while (in.hasNextLine()) {
+            while (running && in.hasNextLine()) {
                 String command = in.nextLine();
                 handleCommand(command);
             }
@@ -124,13 +137,29 @@ public class ClientHandler implements Runnable {
 
             // Jeśli silnik zgłasza koniec gry, blokujemy wszystkie dalsze komendy
             if (engine.isEnd()) {
+               
                 // Wyślij komunikat o zakończeniu gry tylko raz na klienta
                 if (!gameEndNotified) {
                     sendText("Gra zakończona.");
                     if (opponent != null) {
                         opponent.sendText("Gra zakończona.");
                     }
+
+                    engine.setEnd(true); 
+                    persistenceService.finishGame(gameEntity, engine.getWinner());
+
                     gameEndNotified = true;
+
+                    shutdownHandler();
+
+                    if (opponent != null) {
+                    opponent.shutdownHandler();
+                    }
+
+                    SpringApplication.exit(
+                        ApplicationContextProvider.getContext(),
+                        () -> 0
+                    );
                 }
                 return;
             }
@@ -248,6 +277,8 @@ public class ClientHandler implements Runnable {
                 if (opponent != null) {
                     opponent.sendMove(move, result);
                 }
+
+                persistenceService.saveMove(gameEntity, move, moveNumber++);
             }
 
             //Funkcją sendText wysyłamy ruch do terminala
@@ -284,9 +315,13 @@ public class ClientHandler implements Runnable {
     //W NetworkClient zczytujemy pierwszy wyraz z funkcji send,
     //co umożliwi poprawną aktualizację na planszy w GUI
     //w zależności od typu zdarzenia
-    private void sendMove(Move move, MoveResult result) {
+    protected  void sendMove(Move move, MoveResult result) {
         //jak nie było stawiania kamienia, np. pas lub resign, kończymy funkcję
         if (result == null) return;
+
+        System.out.println("WYSYŁANIE RUCHU DO KLIENTA: " + move.getPosition().col() + " " +
+                           move.getPosition().row() + " " +
+                           move.getPlayer().getColor());
 
         send("MOVE " + move.getPosition().col() + " " +
                      move.getPosition().row() + " " +
@@ -300,7 +335,7 @@ public class ClientHandler implements Runnable {
     }
 
     //wysyłanie PASS do GUI lub terminala
-    private void sendPass(GamePlayer player) {
+    protected  void sendPass(GamePlayer player) {
         send("PASS " + player.getColor());
     }
 
@@ -310,7 +345,7 @@ public class ClientHandler implements Runnable {
     }
 
     /** Wysyłanie tekstu do GUI lub terminala */
-    private void sendText(String message) {
+    protected void sendText(String message) {
         send("TEXT " + message);
     }
 
@@ -331,6 +366,7 @@ public class ClientHandler implements Runnable {
 
         if (opponent != null) {
             opponent.send("Przeciwnik rozłączył się. Gra zakończona.");
+            opponent.shutdownHandler();
         }
     }
 
@@ -340,27 +376,33 @@ public class ClientHandler implements Runnable {
      *
      * @param opponent handler przeciwnika
      */
-    public void setOpponent(ClientHandler opponent) {
-        this.opponent = opponent;
-        this.gameStarted = true;
-        if (opponent != null) {
-            opponent.opponent = this;
-            opponent.gameStarted = true;
+    public void setOpponent(Object opponent) {
+        if (opponent instanceof ClientHandler) {
+            this.opponent = (ClientHandler) opponent;
+            this.gameStarted = true;
+            if (this.opponent != null) {
+                this.opponent.opponent = this;
+                this.opponent.gameStarted = true;
 
-            waitForOut();
-            opponent.waitForOut();
+                waitForOut();
+                this.opponent.waitForOut();
 
+                send("GAME_START");
+                this.opponent.send("GAME_START");
+                send("YOUR_TURN");
+                this.opponent.send("OPPONENT_TURN");
+            }
+        } else if (opponent instanceof BotHandler) {
+            this.gameStarted = true;
             send("GAME_START");
-            opponent.send("GAME_START");
-            send("YOUR_TURN");
-            opponent.send("OPPONENT_TURN");
+            send("YOUR_TURN"); // The player always starts first when playing against a bot
         }
     }
 
     /**
      * Oczekuje na inicjalizację strumienia wyjściowego {@link #out}.
      */
-    private void waitForOut() {
+    protected void waitForOut() {
         int waited = 0;
         while (this.out == null && waited < 5000) {
             try {
@@ -380,4 +422,12 @@ public class ClientHandler implements Runnable {
             out.println(message);
         }
     }
-} 
+
+    protected void shutdownHandler() {
+    running = false;
+    try {
+        socket.close();   // this will break Scanner.hasNextLine()
+    } catch (IOException ignored) {}
+    }
+
+}

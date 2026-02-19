@@ -99,6 +99,8 @@ public class GameEngine {
      */
     private final GameEngineService GameEngineService;
 
+    private GamePlayer winner;
+
     /**
      * Tworzy nowy silnik gry dla podanej planszy.
      *
@@ -298,8 +300,10 @@ public class GameEngine {
         int finalBlackScore = blackTerritory + getBlackCaptures();
         int finalWhiteScore = whiteTerritory + getWhiteCaptures();
         GamePlayer winner = (finalBlackScore > finalWhiteScore) ? blackPlayer : whitePlayer;
+        this.winner = winner;
         if (finalBlackScore == finalWhiteScore) {
             winner = null; // Remis
+            this.winner = null;
         }
         return new ScoreResult(finalBlackScore, finalWhiteScore, winner);
     }
@@ -310,9 +314,9 @@ public class GameEngine {
 
     public GamePlayer getCurrentPlayer() { return currentPlayer; }
 
-    public GamePlayer getWhitePlayer() { return blackPlayer; }
+    public GamePlayer getWhitePlayer() { return whitePlayer; }
     
-    public GamePlayer getBlackPlayer() { return whitePlayer; }
+    public GamePlayer getBlackPlayer() { return blackPlayer; }
 
     public void setCurrentPlayer(GamePlayer player) { this.currentPlayer = player; }
 
@@ -335,6 +339,8 @@ public class GameEngine {
     public int getBlackCaptures() { return blackCaptures; }
 
     public int getWhiteCaptures() { return whiteCaptures; }
+    
+    public GamePlayer getWinner() { return this.winner; }
 
     public StoneColor getCurrentColor() {
         return currentPlayer != null ? currentPlayer.getColor() : StoneColor.EMPTY;
